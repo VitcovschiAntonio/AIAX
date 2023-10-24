@@ -4,64 +4,112 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class SpeechRecognitionTest : MonoBehaviour {
-    [SerializeField] private Button startButton;
-    [SerializeField] private Button stopButton;
+public class SpeechRecognitionTest : MonoBehaviour
+{
     [SerializeField] private TextMeshProUGUI text;
 
     private AudioClip clip;
     private byte[] bytes;
     private bool recording;
 
-    private void Start() {
-        startButton.onClick.AddListener(StartRecording);
-        stopButton.onClick.AddListener(StopRecording);
-        stopButton.interactable = false;
+    //define states
+    public enum RecordingState
+    {
+        Idle,
+        Recording,
+        Sending
     }
 
-    private void Update() {
-        if (recording && Microphone.GetPosition(null) >= clip.samples) {
-            StopRecording();
+    private RecordingState currentState = RecordingState.Idle;
+
+    private void Start()
+    {
+        //initialize the AI assistant with an initial state
+        currentState = RecordingState.Idle;
+    }
+
+    private void Update()
+    {
+        switch (currentState)
+        {
+            case RecordingState.Idle:
+                //handle behavior for the "Idle" state
+                
+                break;
+
+            case RecordingState.Recording:
+                //handle behavior for the "Recording" state
+               
+                if (Microphone.GetPosition(null) >= clip.samples)
+                {
+                    StopRecording();
+                }
+                break;
+
+            case RecordingState.Sending:
+                //handle behavior for the "Sending" state
+                
+                SendRecording();
+                break;
+
+                //add more states and their respective behaviors as needed.
         }
     }
 
-    private void StartRecording() {
+    private void StartRecording()
+    {
+        //transition to the "Recording" state
+        currentState = RecordingState.Recording;
+
+        //implement state-specific behavior here
         text.color = Color.white;
         text.text = "Recording...";
-        startButton.interactable = false;
-        stopButton.interactable = true;
+
         clip = Microphone.Start(null, false, 10, 44100);
         recording = true;
     }
 
-    private void StopRecording() {
+    private void StopRecording()
+    {
+        //transition to the "Sending" state
+        currentState = RecordingState.Sending;
+
+        //implement state-specific behavior here
         var position = Microphone.GetPosition(null);
         Microphone.End(null);
         var samples = new float[position * clip.channels];
         clip.GetData(samples, 0);
         bytes = EncodeAsWAV(samples, clip.frequency, clip.channels);
-        recording = false;
+
+        //send the recording here and handle the response
         SendRecording();
     }
 
-    private void SendRecording() {
+    private void SendRecording()
+    {
+        //implement state-specific behavior here
         text.color = Color.yellow;
         text.text = "Sending...";
-        stopButton.interactable = false;
-        HuggingFaceAPI.AutomaticSpeechRecognition(bytes, response => {
+
+        HuggingFaceAPI.AutomaticSpeechRecognition(bytes, response =>
+        {
             text.color = Color.white;
             text.text = response;
-            startButton.interactable = true;
-        }, error => {
+            currentState = RecordingState.Idle; //transition back to Idle
+        }, error =>
+        {
             text.color = Color.red;
             text.text = error;
-            startButton.interactable = true;
+            currentState = RecordingState.Idle; //transition back to Idle
         });
     }
 
-    private byte[] EncodeAsWAV(float[] samples, int frequency, int channels) {
-        using (var memoryStream = new MemoryStream(44 + samples.Length * 2)) {
-            using (var writer = new BinaryWriter(memoryStream)) {
+    private byte[] EncodeAsWAV(float[] samples, int frequency, int channels)
+    {
+        using (var memoryStream = new MemoryStream(44 + samples.Length * 2))
+        {
+            using (var writer = new BinaryWriter(memoryStream))
+            {
                 writer.Write("RIFF".ToCharArray());
                 writer.Write(36 + samples.Length * 2);
                 writer.Write("WAVE".ToCharArray());
@@ -76,7 +124,8 @@ public class SpeechRecognitionTest : MonoBehaviour {
                 writer.Write("data".ToCharArray());
                 writer.Write(samples.Length * 2);
 
-                foreach (var sample in samples) {
+                foreach (var sample in samples)
+                {
                     writer.Write((short)(sample * short.MaxValue));
                 }
             }
