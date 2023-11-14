@@ -5,6 +5,8 @@ using HuggingFace.API;
 using UnityEngine.UI;
 using TMPro;
 using LMNT;
+using System;
+using System.Reflection;
 public class TextToSpeechTest : MonoBehaviour
 {
      [SerializeField] private TextMeshProUGUI text;
@@ -19,9 +21,12 @@ public class TextToSpeechTest : MonoBehaviour
             speech.dialogue = text.text;
             StartCoroutine(speech.Prefetch());
             StartCoroutine(WaitForPrefetchAndTalk());
-            Debug.Log("Label: "+text.text);
+            Debug.Log("Label: 1 "+text.text);
 
-            Debug.Log("Speech: "+speech.dialogue);
+            Debug.Log("Speech: 1 "+speech.dialogue);
+            Assembly assembly = Assembly.GetAssembly (typeof(UnityEditor.SceneView));
+            Type logEntries = assembly.GetType ("UnityEditor.LogEntries");
+            logEntries.GetMethod ("Clear");
             
             
             
@@ -29,7 +34,10 @@ public class TextToSpeechTest : MonoBehaviour
             text.color = Color.red;
             text.text = error;
            
-        });             
+        });  
+         Debug.Log("Label 2: "+text.text);
+
+            Debug.Log("Speech 2: "+speech.dialogue);           
     }
     private IEnumerator WaitForPrefetchAndTalk()
 {
